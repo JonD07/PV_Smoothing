@@ -1,0 +1,14 @@
+main_trunk
+
+To load the source code on CCS:
+
+1. Open CCS.
+2. Select Project->Import CCS Project.
+3. Click "Brouse" and navigate to C:\Users\...\PV_Smoothing\main_trunk\src\cpu1 and highlight launchxl_f28379d. Click "Select folder".
+4. In the Descover Projects window, select Example_28379D_LaunchPad. Check the "Automatically import ref..." option. Ensure "Copy projects into workspace" is NOT checked. Click "Finish".
+
+To run code:
+
+1. Click on Run->Debug.
+2. Only check CPU1 option in popup window.
+3. When board has been flashed, click Resume button or press f8.
