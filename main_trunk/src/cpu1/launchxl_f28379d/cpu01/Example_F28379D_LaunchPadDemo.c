@@ -342,7 +342,7 @@ void main()
             GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
             GpioDataRegs.GPASET.bit.GPIO31 = 1;
         }
-        printf("Still Alive!");
+        printf("Still Alive!\n\r");
 
         DELAY_US(1000000);
     }
