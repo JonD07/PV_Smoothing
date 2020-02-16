@@ -1,20 +1,20 @@
 //###########################################################################
 //
-// FILE:	Example_F28379D_LaunchPadDemo.c
+// FILE:	F28379D_Main.c
 //
-// TITLE:	F28379D LaunchPad Out of Box Demo
+// TITLE:	F28379D LaunchPad PV Smoothing Main source file
+//
+// Author: Jonathan Diller
 //
 // DESCRIPTION:
 //! \addtogroup cpu01_example_list
-//! <h1>Out of Box Demo (LaunchPadDemo)</h1>
+//! <h1>PV Smoothing Main source file</h1>
 //!
-//!  This program is the demo program that comes pre-loaded on the F28379D
-//!  LaunchPad development kit.  The program starts by flashing the two user
-//!  LEDs. After a few seconds the LEDs stop flashing and the device starts 
-//!  sampling ADCIN14 once a second.  If the sample is greater than midscale
-//!  the red LED on the board is lit, while if it is lower a blue LED is lit.  
-//!  Sample data is also display in a serial terminal via the boards back 
-//!  channel UART.  You may view this data by configuring a serial terminal 
+//!  This program performs PV Smoothing using a DC-to-DC converter and
+//!  battery storage on the TI F28379D LaunchPad. The red LED will flash
+//!  on the board to indicate the system is running. System status
+//!  data is displayed in a serial terminal via the boards back
+//!  channel UART. You may view this data by configuring a serial terminal
 //!  to the correct COM port at 115200 Baud 8-N-1.
 //!
 //
@@ -64,6 +64,7 @@
 
 #include "F28x_Project.h"     // DSP28x Headerfile
 #include "sci_io.h"
+#include "PWMDriver.h"
 
 //
 // Defines
@@ -330,21 +331,14 @@ void main()
         //
         currentSample = sampleADC();
 
-        i++;
         // Blink light to show program is running
-        if(i & 0x01)
-        {
-            GpioDataRegs.GPBSET.bit.GPIO34 = 1;
-            GpioDataRegs.GPACLEAR.bit.GPIO31 = 1;
-        }
-        else
-        {
-            GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
-            GpioDataRegs.GPASET.bit.GPIO31 = 1;
-        }
+        GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
         printf("Still Alive!\n\r");
+        DELAY_US(100000);
+        GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
-        DELAY_US(1000000);
+
+        DELAY_US(900000);
     }
 }
 
