@@ -51,6 +51,11 @@
 			<locationURI>PARENT-5-PROJECT_LOC/common/source/F2837xD_DefaultISR.c</locationURI>
 		</link>
 		<link>
+			<name>F2837xD_EPwm.c</name>
+			<type>1</type>
+			<locationURI>PARENT-5-PROJECT_LOC/common/source/F2837xD_EPwm.c</locationURI>
+		</link>
+		<link>
 			<name>F2837xD_GlobalVariableDefs.c</name>
 			<type>1</type>
 			<locationURI>PARENT-5-PROJECT_LOC/headers/source/F2837xD_GlobalVariableDefs.c</locationURI>

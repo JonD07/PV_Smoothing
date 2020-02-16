@@ -224,6 +224,11 @@ void main()
     scia_init();
 
     //
+    // Initialize PWM
+    //
+    config_PWM();
+
+    //
     // Initialize GPIOs for the LEDs and turn them off
     //
     EALLOW;
@@ -235,6 +240,7 @@ void main()
 
     //
     // Enable global Interrupts and higher priority real-time debug events:
+    // Only do this once, in main!!
     //
     EINT;   // Enable Global interrupt INTM
     ERTM;   // Enable Global realtime interrupt DBGM
