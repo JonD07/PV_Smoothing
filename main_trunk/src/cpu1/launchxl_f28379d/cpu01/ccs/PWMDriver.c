@@ -14,13 +14,12 @@
 //
 // Globals
 //
-EPWM_INFO pwm1_info;
+EPWM_CONFIG t_pwm1Config;
 
 //
 // config_PWM()
 //
-void config_PWM(void)
-{
+void init_PWMDriver(void) {
 
 //
 // Enable PWM1
@@ -47,7 +46,7 @@ void config_PWM(void)
     CpuSysRegs.PCLKCR0.bit.TBCLKSYNC = 0;
     EDIS;
 
-    InitEPwm1Example();
+    InitEPwm1();
 
     EALLOW;
     CpuSysRegs.PCLKCR0.bit.TBCLKSYNC = 1;
@@ -67,39 +66,38 @@ void config_PWM(void)
 //
 // epwm1_isr - EPWM1 ISR to update compare values
 //
-__interrupt void epwm1_isr(void)
-{
-    //
-    // Update the CMPA and CMPB values
-    //
-    update_compare(&pwm1_info);
+__interrupt void epwm1_isr(void) {
+	//
+	// Update the CMPA and CMPB values
+	//
+	t_pwm1Config.EPwmRegHandle->CMPA.bit.CMPA = t_pwm1Config.EPwmCMP_A;
+	t_pwm1Config.EPwmRegHandle->CMPB.bit.CMPB = t_pwm1Config.EPwmCMP_B;
 
-    //
-    // Clear INT flag for this timer
-    //
-    EPwm1Regs.ETCLR.bit.INT = 1;
+	//
+	// Clear INT flag for this timer
+	//
+	EPwm1Regs.ETCLR.bit.INT = 1;
 
-    //
-    // Acknowledge this interrupt to receive more interrupts from group 3
-    //
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+	//
+	// Acknowledge this interrupt to receive more interrupts from group 3
+	//
+	PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
 }
 
 //
 // InitEPwm1Example - Initialize EPWM1 values
 //
-void InitEPwm1Example()
-{
+void InitEPwm1() {
    //
    // Setup TBCLK
    //
-   EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up
-   EPwm1Regs.TBPRD = EPWM1_TIMER_TBPRD;       // Set timer period
-   EPwm1Regs.TBCTL.bit.PHSEN = TB_DISABLE;    // Disable phase loading
-   EPwm1Regs.TBPHS.bit.TBPHS = 0x0000;        // Phase is 0
-   EPwm1Regs.TBCTR = 0x0000;                  // Clear counter
-   EPwm1Regs.TBCTL.bit.HSPCLKDIV = TB_DIV2;   // Clock ratio to SYSCLKOUT
-   EPwm1Regs.TBCTL.bit.CLKDIV = TB_DIV2;
+   EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP;	// Count up
+   EPwm1Regs.TBPRD = EPWM1_TIMER_TBPRD;			// Set timer period
+   EPwm1Regs.TBCTL.bit.PHSEN = TB_DISABLE;		// Disable phase loading
+   EPwm1Regs.TBPHS.bit.TBPHS = 0x0000;			// Phase is 0
+   EPwm1Regs.TBCTR = 0x0000;					// Clear counter
+   EPwm1Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;		// Clock ratio to SYSCLKOUT
+   EPwm1Regs.TBCTL.bit.CLKDIV = TB_DIV1;		// Divide by 1
 
    //
    // Setup shadow register load on ZERO
@@ -112,8 +110,8 @@ void InitEPwm1Example()
    //
    // Set Compare values
    //
-   EPwm1Regs.CMPA.bit.CMPA = EPWM1_MIN_CMPA;     // Set compare A value
-   EPwm1Regs.CMPB.bit.CMPB = EPWM1_MIN_CMPB;     // Set Compare B value
+   EPwm1Regs.CMPA.bit.CMPA = EPWM1_TIMER_TBPRD/2;     // Set compare A value
+   EPwm1Regs.CMPB.bit.CMPB = EPWM1_TIMER_TBPRD/2;     // Set Compare B value
 
    //
    // Set actions
@@ -134,113 +132,25 @@ void InitEPwm1Example()
    EPwm1Regs.ETPS.bit.INTPRD = ET_3RD;           // Generate INT on 3rd event
 
    //
-   // Information this example uses to keep track
-   // of the direction the CMPA/CMPB values are
-   // moving, the min and max allowed values and
-   // a pointer to the correct ePWM registers
+   // Set ePWM struct initial values
    //
-   pwm1_info.EPwm_CMPA_Direction = EPWM_CMP_UP; // Start by increasing
-                                                 // CMPA & CMPB
-   pwm1_info.EPwm_CMPB_Direction = EPWM_CMP_UP;
-   pwm1_info.EPwmTimerIntCount = 0;             // Zero the interrupt counter
-   pwm1_info.EPwmRegHandle = &EPwm1Regs;        // Set the pointer to the
+   t_pwm1Config.EPwmRegHandle = &EPwm1Regs;        // Set the pointer to the
                                                  // ePWM module
-   pwm1_info.EPwmMaxCMPA = EPWM1_MAX_CMPA;      // Setup min/max
+   t_pwm1Config.EPwmMaxCMPA = EPWM1_MAX_CMPA;      // Setup min/max
                                                  // CMPA/CMPB values
-   pwm1_info.EPwmMinCMPA = EPWM1_MIN_CMPA;
-   pwm1_info.EPwmMaxCMPB = EPWM1_MAX_CMPB;
-   pwm1_info.EPwmMinCMPB = EPWM1_MIN_CMPB;
+   t_pwm1Config.EPwmMinCMPA = EPWM1_MIN_CMPA;
+   t_pwm1Config.EPwmMaxCMPB = EPWM1_MAX_CMPB;
+   t_pwm1Config.EPwmMinCMPB = EPWM1_MIN_CMPB;
+
+	t_pwm1Config.EPwmCMP_A = EPWM1_TIMER_TBPRD/2;
+	t_pwm1Config.EPwmCMP_B = EPWM1_TIMER_TBPRD/2;
 }
 
-//
-// update_compare - Update the compare values for the specified EPWM
-//
-void update_compare(EPWM_INFO *epwm_info)
-{
-   //
-   // Every 10'th interrupt, change the CMPA/CMPB values
-   //
-   if(epwm_info->EPwmTimerIntCount == 10)
-   {
-       epwm_info->EPwmTimerIntCount = 0;
-
-       //
-       // If we were increasing CMPA, check to see if
-       // we reached the max value.  If not, increase CMPA
-       // else, change directions and decrease CMPA
-       //
-       if(epwm_info->EPwm_CMPA_Direction == EPWM_CMP_UP)
-       {
-           if(epwm_info->EPwmRegHandle->CMPA.bit.CMPA < epwm_info->EPwmMaxCMPA)
-           {
-              epwm_info->EPwmRegHandle->CMPA.bit.CMPA++;
-           }
-           else
-           {
-              epwm_info->EPwm_CMPA_Direction = EPWM_CMP_DOWN;
-              epwm_info->EPwmRegHandle->CMPA.bit.CMPA--;
-           }
-       }
-
-       //
-       // If we were decreasing CMPA, check to see if
-       // we reached the min value.  If not, decrease CMPA
-       // else, change directions and increase CMPA
-       //
-       else
-       {
-           if(epwm_info->EPwmRegHandle->CMPA.bit.CMPA == epwm_info->EPwmMinCMPA)
-           {
-              epwm_info->EPwm_CMPA_Direction = EPWM_CMP_UP;
-              epwm_info->EPwmRegHandle->CMPA.bit.CMPA++;
-           }
-           else
-           {
-              epwm_info->EPwmRegHandle->CMPA.bit.CMPA--;
-           }
-       }
-
-       //
-       // If we were increasing CMPB, check to see if
-       // we reached the max value.  If not, increase CMPB
-       // else, change directions and decrease CMPB
-       //
-       if(epwm_info->EPwm_CMPB_Direction == EPWM_CMP_UP)
-       {
-           if(epwm_info->EPwmRegHandle->CMPB.bit.CMPB < epwm_info->EPwmMaxCMPB)
-           {
-              epwm_info->EPwmRegHandle->CMPB.bit.CMPB++;
-           }
-           else
-           {
-              epwm_info->EPwm_CMPB_Direction = EPWM_CMP_DOWN;
-              epwm_info->EPwmRegHandle->CMPB.bit.CMPB--;
-           }
-       }
-
-       //
-       // If we were decreasing CMPB, check to see if
-       // we reached the min value.  If not, decrease CMPB
-       // else, change directions and increase CMPB
-       //
-       else
-       {
-           if(epwm_info->EPwmRegHandle->CMPB.bit.CMPB ==
-              epwm_info->EPwmMinCMPB)
-           {
-              epwm_info->EPwm_CMPB_Direction = EPWM_CMP_UP;
-              epwm_info->EPwmRegHandle->CMPB.bit.CMPB++;
-           }
-           else
-           {
-              epwm_info->EPwmRegHandle->CMPB.bit.CMPB--;
-           }
-       }
-   }
-   else
-   {
-      epwm_info->EPwmTimerIntCount++;
-   }
-
-   return;
+EPWM_CONFIG* getPWMConfig(Uint16 n) {
+	switch(n) {
+	case 1:
+		return &t_pwm1Config;
+	default:
+		return &t_pwm1Config;
+	}
 }

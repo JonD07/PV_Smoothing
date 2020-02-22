@@ -90,9 +90,9 @@ int16_t currentSample;
 //
 // sampleADC - 
 //
-int16_t sampleADC(void)
-{
+int16_t sampleADC(void) {
     int16_t sample;
+    EPWM_CONFIG* p_pwm1Config = getPWMConfig(1);
 
     //
     // Force start of conversion on SOC0
@@ -115,6 +115,8 @@ int16_t sampleADC(void)
     //
     sample = AdcaResultRegs.ADCRESULT1;
 
+//    p_pwm1Config->EPwmCMP_A = EPWM1_TIMER_TBPRD/2;
+
     return(sample);
 }
 
@@ -122,8 +124,7 @@ int16_t sampleADC(void)
 // scia_init - SCIA  8-bit word, baud rate 0x000F, default, 1 STOP bit, 
 // no parity
 //
-void scia_init()
-{
+void scia_init() {
     //
     // Note: Clocks were turned on to the SCIA peripheral
     // in the InitSysCtrl() function
@@ -158,8 +159,7 @@ void scia_init()
 //
 // Main
 //
-void main()
-{
+void main() {
     volatile int status = 0;
     uint16_t i;
     volatile FILE *fid;
@@ -226,7 +226,7 @@ void main()
     //
     // Initialize PWM
     //
-    config_PWM();
+    init_PWMDriver();
 
     //
     // Initialize GPIOs for the LEDs and turn them off
@@ -312,8 +312,7 @@ void main()
     GpioDataRegs.GPADAT.bit.GPIO31 = 0;
     GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
 
-    for(i = 0; i < 50; i++)
-    {
+    for(i = 0; i < 50; i++) {
         GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
         GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
         DELAY_US(50000);
@@ -330,8 +329,7 @@ void main()
     //
     // Main program loop - continually sample temperature
     //
-    for(;;)
-    {
+    while(true) {
         //
         // Sample ADCIN14
         //
