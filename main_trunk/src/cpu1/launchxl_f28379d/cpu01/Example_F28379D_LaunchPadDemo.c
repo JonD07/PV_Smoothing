@@ -87,12 +87,66 @@ const unsigned char pucTempString[] = "ADCIN14 Sample:     ";
 
 int16_t currentSample;
 
+void adc_init(void) {
+    //
+    // Configure the ADC: Initialize the ADC
+    //
+	EALLOW;
+
+    //
+	// write configurations
+    //
+	AdcaRegs.ADCCTL2.bit.PRESCALE = 6;      // set ADCCLK divider to /4
+	AdcbRegs.ADCCTL2.bit.PRESCALE = 6;      // set ADCCLK divider to /4
+    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+
+    //
+	// Set pulse positions to late
+    //
+	AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+	AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+
+    //
+	// power up the ADCs
+    //
+	AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+	AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+
+    //
+	// delay for 1ms to allow ADC time to power up
+    //
+	DELAY_US(1000);
+
+    //
+    // ADCA
+    //
+    EALLOW;
+    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 0x0E;   //SOC0 will convert pin ADCIN14
+
+    //
+    // sample window is acqps + 1 SYSCLK cycles
+    //
+    AdcaRegs.ADCSOC0CTL.bit.ACQPS = 25;
+
+    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 0x0E;   //SOC1 will convert pin ADCIN14
+
+    //
+    // sample window is acqps + 1 SYSCLK cycles
+    //
+    AdcaRegs.ADCSOC1CTL.bit.ACQPS = 25;
+
+    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1;  //end of SOC1 will set INT1 flag
+    AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1;    //enable INT1 flag
+    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;  //make sure INT1 flag is cleared
+    EDIS;
+}
+
 //
 // sampleADC - 
 //
 int16_t sampleADC(void) {
     int16_t sample;
-    EPWM_CONFIG* p_pwm1Config = getPWMConfig(1);
 
     //
     // Force start of conversion on SOC0
@@ -228,6 +282,11 @@ void main() {
     //
     init_PWMDriver();
 
+	//
+	// Initialize ADC
+	//
+	adc_init();
+
     //
     // Initialize GPIOs for the LEDs and turn them off
     //
@@ -244,58 +303,6 @@ void main() {
     //
     EINT;   // Enable Global interrupt INTM
     ERTM;   // Enable Global realtime interrupt DBGM
-
-    //
-    // Configure the ADC: Initialize the ADC
-    //
-	EALLOW;
-
-    //
-	// write configurations
-    //
-	AdcaRegs.ADCCTL2.bit.PRESCALE = 6;      // set ADCCLK divider to /4
-	AdcbRegs.ADCCTL2.bit.PRESCALE = 6;      // set ADCCLK divider to /4
-    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
-    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
-
-    //
-	// Set pulse positions to late
-    //
-	AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-	AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-
-    //
-	// power up the ADCs
-    //
-	AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-	AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-
-    //
-	// delay for 1ms to allow ADC time to power up
-    //
-	DELAY_US(1000);
-
-    //
-    // ADCA
-    //
-    EALLOW;
-    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 0x0E;   //SOC0 will convert pin ADCIN14
-    
-    //
-    // sample window is acqps + 1 SYSCLK cycles
-    //
-    AdcaRegs.ADCSOC0CTL.bit.ACQPS = 25;     
-    
-    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 0x0E;   //SOC1 will convert pin ADCIN14
-    
-    //
-    // sample window is acqps + 1 SYSCLK cycles
-    //
-    AdcaRegs.ADCSOC1CTL.bit.ACQPS = 25;     
-    
-    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1;  //end of SOC1 will set INT1 flag
-    AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1;    //enable INT1 flag
-    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;  //make sure INT1 flag is cleared
 
     //
     // Redirect STDOUT to SCI
@@ -324,8 +331,6 @@ void main() {
     GpioDataRegs.GPADAT.bit.GPIO31 = 1;
     GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
     
-    currentSample = sampleADC();
-    
     //
     // Main program loop - continually sample temperature
     //
@@ -337,7 +342,7 @@ void main() {
 
         // Blink light to show program is running
         GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
-        printf("Still Alive!\n\r");
+        printf("Value read: %d\n\r", currentSample);
         DELAY_US(100000);
         GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
