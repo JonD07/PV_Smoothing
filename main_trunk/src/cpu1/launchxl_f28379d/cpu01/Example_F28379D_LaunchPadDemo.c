@@ -319,7 +319,7 @@ void main() {
     GpioDataRegs.GPADAT.bit.GPIO31 = 0;
     GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
 
-    for(i = 0; i < 50; i++) {
+    for(i = 0; i < 10; i++) {
         GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
         GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
         DELAY_US(50000);
@@ -342,7 +342,7 @@ void main() {
 
         // Blink light to show program is running
         GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
-        printf("Value read: %d\n\r", currentSample);
+        printf("Value read: %zu\n\r", currentSample);
         DELAY_US(100000);
         GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
