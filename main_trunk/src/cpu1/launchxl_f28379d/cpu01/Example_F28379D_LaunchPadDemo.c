@@ -161,7 +161,7 @@ void ConfigureADC(void)
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
     AdcbRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
     AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
-    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_16BIT, ADC_SIGNALMODE_SINGLE);
+    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
 
     //
     //Set pulse positions to late
@@ -358,6 +358,11 @@ void main() {
 	uint16_t i;
 	volatile FILE *fid;
 
+	uint32_t A1_Vin = 0;
+	uint32_t A3_Vin = 0;
+	uint32_t B2_Vin = 0;
+	uint32_t B3_Vin = 0;
+
 	//
 	// If running from flash copy RAM only functions to RAM
 	//
@@ -494,7 +499,14 @@ void main() {
 		// Blink light to show program is running
 		GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
 //		printf("Value read: %zu\n\r", currentSample);
-		printf("Values read: A1=%d, A3=%d, B2=%d, B3=%d\n\r", nVin_A1, nVin_A3, nVin_B2, nVin_B3);
+		printf("Values read: \tA1=%d, \tA3=%d, \tB2=%d, \tB3=%d\n\r", nVin_A1, nVin_A3, nVin_B2, nVin_B3);
+
+		A1_Vin = (3300*(uint32_t)nVin_A1)/4095;
+		A3_Vin = (3300*(uint32_t)nVin_A3)/4095;
+		B2_Vin = (3300*(uint32_t)nVin_B2)/4095;
+		B3_Vin = (3300*(uint32_t)nVin_B3)/4095;
+
+		printf("Volts read: \tA1=%lu mV, \tA3=%lu mV, \tB2=%lu mV, \tB3=%lu mV\n\r", A1_Vin, A3_Vin, B2_Vin, B3_Vin);
 		DELAY_US(100000);
 		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
