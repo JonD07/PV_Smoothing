@@ -86,66 +86,10 @@ const unsigned char escWhite[] = {0x1B, 0x5B, '3','7', 'm'};
 const unsigned char escLeft[] = {0x1B, 0x5B, '3','7', 'm'};
 const unsigned char pucTempString[] = "ADCIN14 Sample:     ";
 
-int16_t currentSample;
 int16_t nVin_A1;
-int16_t nVin_A3;
-int16_t nVin_B2;
-int16_t nVin_B3;
-
-void adc_init(void) {
-    //
-    // Configure the ADC: Initialize the ADC
-    //
-	EALLOW;
-
-    //
-	// write configurations
-    //
-	AdcaRegs.ADCCTL2.bit.PRESCALE = 6;      // set ADCCLK divider to /4
-	AdcbRegs.ADCCTL2.bit.PRESCALE = 6;      // set ADCCLK divider to /4
-    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
-    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
-
-    //
-	// Set pulse positions to late
-    //
-	AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-	AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-
-    //
-	// power up the ADCs
-    //
-	AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-	AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-
-    //
-	// delay for 1ms to allow ADC time to power up
-    //
-	DELAY_US(1000);
-
-    //
-    // ADCA
-    //
-    EALLOW;
-    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 0x0E;   //SOC0 will convert pin ADCIN14
-
-    //
-    // sample window is acqps + 1 SYSCLK cycles
-    //
-    AdcaRegs.ADCSOC0CTL.bit.ACQPS = 25;
-
-    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 0x0E;   //SOC1 will convert pin ADCIN14
-
-    //
-    // sample window is acqps + 1 SYSCLK cycles
-    //
-    AdcaRegs.ADCSOC1CTL.bit.ACQPS = 25;
-
-    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1;  //end of SOC1 will set INT1 flag
-    AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1;    //enable INT1 flag
-    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;  //make sure INT1 flag is cleared
-    EDIS;
-}
+int16_t nVin_B5;
+int16_t nVin_C2;
+int16_t nVin_14;	// on ADC D
 
 //
 // ConfigureADC - Write ADC configurations and power up the ADC for both
@@ -160,20 +104,28 @@ void ConfigureADC(void)
     //
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
     AdcbRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdccRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdcdRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
     AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
     AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+    AdcSetMode(ADC_ADCC, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
+    AdcSetMode(ADC_ADCD, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE);
 
     //
     //Set pulse positions to late
     //
     AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
     AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdcdRegs.ADCCTL1.bit.INTPULSEPOS = 1;
 
     //
     //power up the ADCs
     //
     AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
     AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    AdccRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    AdcdRegs.ADCCTL1.bit.ADCPWDNZ = 1;
 
     //
     //delay for 1ms to allow ADC time to power up
@@ -208,15 +160,12 @@ void SetupADCSoftware(void)
 	//ADCA
 	//
 	EALLOW;
-	AdcaRegs.ADCSOC0CTL.bit.CHSEL = 1;  //SOC0 will convert pin A1
-	AdcaRegs.ADCSOC0CTL.bit.ACQPS = acqps; //sample window is acqps +
-										   //1 SYSCLK cycles
-	AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3;  //SOC1 will convert pin A3
-	AdcaRegs.ADCSOC1CTL.bit.ACQPS = acqps; //sample window is acqps +
-										   //1 SYSCLK cycles
-	AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //end of SOC1 will set INT1 flag
-	AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1;   //enable INT1 flag
-	AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+	AdcaRegs.ADCSOC0CTL.bit.CHSEL = 1;		//SOC0 will convert pin A1
+	AdcaRegs.ADCSOC0CTL.bit.ACQPS = acqps;	//sample window is acqps + 1 SYSCLK cycles
+	AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 0;	//end of SOC0 will set INT1 flag
+	AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1;	//enable INT1 flag
+	AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;	//make sure INT1 flag is cleared
+	EDIS;
 
 	//
 	// ADCB
@@ -232,64 +181,71 @@ void SetupADCSoftware(void)
 	}
 
 	//ADCB
-	AdcbRegs.ADCSOC0CTL.bit.CHSEL = 2;  //SOC0 will convert pin B2
-	AdcbRegs.ADCSOC0CTL.bit.ACQPS = acqps; //sample window is acqps +
-										   //1 SYSCLK cycles
-	AdcbRegs.ADCSOC1CTL.bit.CHSEL = 3;  //SOC1 will convert pin B3
-	AdcbRegs.ADCSOC1CTL.bit.ACQPS = acqps; //sample window is acqps +
-										   //1 SYSCLK cycles
-	AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //end of SOC1 will set INT1 flag
-	AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1;   //enable INT1 flag
-	AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+	EALLOW;
+	AdcbRegs.ADCSOC0CTL.bit.CHSEL = 5;		//SOC0 will convert pin B5
+	AdcbRegs.ADCSOC0CTL.bit.ACQPS = acqps;	//sample window is acqps + 1 SYSCLK cycles
+	AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0;	//end of SOC0 will set INT1 flag
+	AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1;	//enable INT1 flag
+	AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;	//make sure INT1 flag is cleared
+	EDIS;
+
+	//
+	// ADCC
+	// Determine minimum acquisition window (in SYSCLKS) based on resolution
+	//
+	if(ADC_RESOLUTION_12BIT == AdccRegs.ADCCTL2.bit.RESOLUTION)
+	{
+		acqps = 14; //75ns
+	}
+	else //resolution is 16-bit
+	{
+		acqps = 63; //320ns
+	}
+
+	//ADCC
+	EALLOW;
+	AdccRegs.ADCSOC0CTL.bit.CHSEL = 2;		//SOC0 will convert pin C2
+	AdccRegs.ADCSOC0CTL.bit.ACQPS = acqps;	//sample window is acqps + 1 SYSCLK cycles
+	AdccRegs.ADCINTSEL1N2.bit.INT1SEL = 0;	//end of SOC0 will set INT1 flag
+	AdccRegs.ADCINTSEL1N2.bit.INT1E = 1;	//enable INT1 flag
+	AdccRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;	//make sure INT1 flag is cleared
+	EDIS;
+
+	//
+	// ADCD
+	// Determine minimum acquisition window (in SYSCLKS) based on resolution
+	//
+	if(ADC_RESOLUTION_12BIT == AdcdRegs.ADCCTL2.bit.RESOLUTION)
+	{
+		acqps = 14; //75ns
+	}
+	else //resolution is 16-bit
+	{
+		acqps = 63; //320ns
+	}
+
+	//ADCC
+	EALLOW;
+	AdcdRegs.ADCSOC0CTL.bit.CHSEL = 0x0E;	//SOC0 will convert pin ADCIN14
+	AdcdRegs.ADCSOC0CTL.bit.ACQPS = acqps;	//sample window is acqps + 1 SYSCLK cycles
+	AdcdRegs.ADCINTSEL1N2.bit.INT1SEL = 0;	//end of SOC0 will set INT1 flag
+	AdcdRegs.ADCINTSEL1N2.bit.INT1E = 1;	//enable INT1 flag
+	AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;	//make sure INT1 flag is cleared
 	EDIS;
 }
 
 //
-// sampleADC - 
+// sampleADC - A3, B3, C2, D14
 //
-int16_t sampleADC(void) {
-	int16_t sample;
-
-	//
-	// Force start of conversion on SOC0
-	//
-	AdcaRegs.ADCSOCFRC1.all = 0x03;
-
-	//
-	// Wait for end of conversion.
-	//
-	while(AdcaRegs.ADCINTFLG.bit.ADCINT1 == 0)
-	{
-		//
-		// Wait for ADCINT1
-		//
-	}
-	AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;        // Clear ADCINT1
-
-	//
-	// Get ADC sample result from SOC0
-	//
-	sample = AdcaResultRegs.ADCRESULT1;
-
-//	p_pwm1Config->EPwmCMP_A = EPWM1_TIMER_TBPRD/2;
-
-	return(sample);
-}
-
-//
-// sampleADC - A1, A3, B2, B3
-//
-int16_t readADCInput(int16_t* A1, int16_t* A3, int16_t* B2, int16_t* B3) {
+int16_t readADCInput(int16_t* A1, int16_t* B5, int16_t* C2, int16_t* D14) {
 	//
 	//convert, wait for completion, and store results
-	//start conversions immediately via software, ADCA
+	//start conversions immediately via software ADCA, ADCB, ADCC, ADCD
 	//
-	AdcaRegs.ADCSOCFRC1.all = 0x0003; //SOC0 and SOC1
-
-	//
-	//start conversions immediately via software, ADCB
-	//
-	AdcbRegs.ADCSOCFRC1.all = 0x0003; //SOC0 and SOC1
+	AdcaRegs.ADCSOCFRC1.all = 0x0001; //SOC0
+	AdcbRegs.ADCSOCFRC1.all = 0x0001; //SOC0
+	AdccRegs.ADCSOCFRC1.all = 0x0001; //SOC0
+	AdcdRegs.ADCSOCFRC1.all = 0x0001; //SOC0
 
 	//
 	//wait for ADCA to complete, then acknowledge flag
@@ -304,12 +260,24 @@ int16_t readADCInput(int16_t* A1, int16_t* A3, int16_t* B2, int16_t* B3) {
 	AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;
 
 	//
+	//wait for ADCC to complete, then acknowledge flag
+	//
+	while(AdccRegs.ADCINTFLG.bit.ADCINT1 == 0);
+	AdccRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;
+
+	//
+	//wait for ADCD to complete, then acknowledge flag
+	//
+	while(AdcdRegs.ADCINTFLG.bit.ADCINT1 == 0);
+	AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;
+
+	//
 	//store results
 	//
 	*A1 = AdcaResultRegs.ADCRESULT0;
-	*A3 = AdcaResultRegs.ADCRESULT1;
-	*B2 = AdcbResultRegs.ADCRESULT0;
-	*B3 = AdcbResultRegs.ADCRESULT1;
+	*B5 = AdcbResultRegs.ADCRESULT0;
+	*C2 = AdccResultRegs.ADCRESULT0;
+	*D14 = AdcdResultRegs.ADCRESULT0;
 
 	return true;
 }
@@ -359,9 +327,9 @@ void main() {
 	volatile FILE *fid;
 
 	uint32_t A1_Vin = 0;
-	uint32_t A3_Vin = 0;
-	uint32_t B2_Vin = 0;
-	uint32_t B3_Vin = 0;
+	uint32_t B5_Vin = 0;
+	uint32_t C2_Vin = 0;
+	uint32_t D14_Vin = 0;
 
 	//
 	// If running from flash copy RAM only functions to RAM
@@ -428,12 +396,7 @@ void main() {
 	init_PWMDriver();
 
 	//
-	// Initialize ADC
-	//
-	//	adc_init();
-
-	//
-	//Configure the ADCs and power them up
+	// Configure the ADCs and power them up
 	//
 	ConfigureADC();
 
@@ -490,23 +453,21 @@ void main() {
 	// Main program loop - continually sample temperature
 	//
 	while(true) {
-		//
-		// Sample ADCIN14
-		//
-//		currentSample = sampleADC();
-		readADCInput(&nVin_A1, &nVin_A3, &nVin_B2, &nVin_B3);
-
-		// Blink light to show program is running
+		// Blink red LED to show program is running
 		GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
-//		printf("Value read: %zu\n\r", currentSample);
-		printf("Values read: \tA1=%d, \tA3=%d, \tB2=%d, \tB3=%d\n\r", nVin_A1, nVin_A3, nVin_B2, nVin_B3);
 
+		// Read ADC Values
+		readADCInput(&nVin_A1, &nVin_C2, &nVin_B5, &nVin_14);
 		A1_Vin = (3300*(uint32_t)nVin_A1)/4095;
-		A3_Vin = (3300*(uint32_t)nVin_A3)/4095;
-		B2_Vin = (3300*(uint32_t)nVin_B2)/4095;
-		B3_Vin = (3300*(uint32_t)nVin_B3)/4095;
+		C2_Vin = (3300*(uint32_t)nVin_C2)/4095;
+		B5_Vin = (3300*(uint32_t)nVin_B5)/4095;
+		D14_Vin = (3300*(uint32_t)nVin_14)/4095;
 
-		printf("Volts read: \tA1=%lu mV, \tA3=%lu mV, \tB2=%lu mV, \tB3=%lu mV\n\r", A1_Vin, A3_Vin, B2_Vin, B3_Vin);
+		// Print results
+//		printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
+		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", A1_Vin, B5_Vin, C2_Vin, D14_Vin);
+
+		// Wait, reset LED
 		DELAY_US(100000);
 		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
