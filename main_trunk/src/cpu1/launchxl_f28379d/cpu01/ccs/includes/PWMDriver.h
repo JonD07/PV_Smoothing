@@ -5,9 +5,13 @@
  *      Author: Jonathan Diller
  */
 
-#ifndef PWMDRIVER_H_
-#define PWMDRIVER_H_
+#ifndef INCLUDES_PWMDRIVER_H_
+#define INCLUDES_PWMDRIVER_H_
 
+//
+// Included Files
+//
+#include "Globals.h"
 #include "F28x_Project.h"     // DSP28x Headerfile
 
 //
@@ -28,17 +32,6 @@
 //
 // Globals
 //
-typedef struct
-{
-	volatile struct EPWM_REGS *EPwmRegHandle;
-	Uint16 EPwmMaxCMPA;
-	Uint16 EPwmMinCMPA;
-	Uint16 EPwmMaxCMPB;
-	Uint16 EPwmMinCMPB;
-
-	Uint16 EPwmCMP_A;
-	Uint16 EPwmCMP_B;
-}EPWM_CONFIG;
 
 //
 //  Function Prototypes
@@ -48,4 +41,4 @@ void InitEPwm1(void);
 __interrupt void epwm1_isr(void);
 EPWM_CONFIG* getPWMConfig(Uint16);
 
-#endif /* PWMDRIVER_H_ */
+#endif /* INCLUDES_PWMDRIVER_H_ */
