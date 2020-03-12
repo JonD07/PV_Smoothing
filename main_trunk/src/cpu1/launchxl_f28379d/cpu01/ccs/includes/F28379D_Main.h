@@ -28,9 +28,10 @@
 //
 // Prototypes
 //
-void ConfigureADC(void);
+void InitSystem(void);
+void ConfigADC(void);
 void SetupADCSoftware(void);
 int16_t readADCInput(int16_t* A1, int16_t* B5, int16_t* C2, int16_t* D14);
-void scia_init();
+void ConfigSCIA();
 
 #endif /* INCLUDES_F28379D_MAIN_H_ */

@@ -36,7 +36,7 @@
 //
 //  Function Prototypes
 //
-void init_PWMDriver(void);
+void ConfigPWMDriver(void);
 void InitEPwm1(void);
 __interrupt void epwm1_isr(void);
 EPWM_CONFIG* getPWMConfig(Uint16);

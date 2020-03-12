@@ -19,7 +19,7 @@ EPWM_CONFIG t_pwm1Config;
 //
 // config_PWM()
 //
-void init_PWMDriver(void) {
+void ConfigPWMDriver(void) {
 	//
 	// Enable PWM1
 	//

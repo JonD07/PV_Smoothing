@@ -77,9 +77,6 @@ SYSTEM_MEASUREMENT t_SysMsrmnt;
 // Main
 //
 void main() {
-	volatile int status = 0;
-	uint16_t i;
-	volatile FILE *fid;
 
 	int16_t nVin_A1;	// BatteryCurrent_Vin
 	int16_t nVin_B5;	// BatteryVoltage_Vin
@@ -87,6 +84,77 @@ void main() {
 	int16_t nVin_14;	// PanelVoltage_Vin
 						// on ADC D
 
+	//
+	// Initialize the system
+	//
+	InitSystem();
+
+	//
+	// Light display - show user system has started up
+	{
+		//
+		// Initialize GPIOs for the LEDs and turn them off
+		//
+		EALLOW;
+		GpioCtrlRegs.GPADIR.bit.GPIO31 = 1;
+		GpioCtrlRegs.GPBDIR.bit.GPIO34 = 1;
+		GpioDataRegs.GPADAT.bit.GPIO31 = 1;
+		GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
+		EDIS;
+
+		//
+		// Twiddle LEDs
+		//
+		GpioDataRegs.GPADAT.bit.GPIO31 = 0;
+		GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
+
+		uint16_t i;
+		for(i = 0; i < 20; i++) {
+			GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
+			GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
+			DELAY_US(50000);
+		}
+
+		//
+		// LEDs off
+		//
+		GpioDataRegs.GPADAT.bit.GPIO31 = 1;
+		GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
+	}
+
+	//
+	// Main program loop - continually sample temperature
+	//
+	while(true) {
+		// Blink red LED to show program is running
+		GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
+
+		// Read ADC Values
+		readADCInput(&nVin_A1, &nVin_B5, &nVin_C2, &nVin_14);
+		t_SysMsrmnt.BatteryCurrent_Vin = (3300*(uint32_t)nVin_A1)/4095;
+		t_SysMsrmnt.PanelCurrent_Vin = (3300*(uint32_t)nVin_C2)/4095;
+		t_SysMsrmnt.BatteryVoltage_Vin = (3300*(uint32_t)nVin_B5)/4095;
+		t_SysMsrmnt.PanelVoltage_Vin = (3300*(uint32_t)nVin_14)/4095;
+
+		// Print results
+		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
+		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
+			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin);
+
+		// Wait, reset LED
+		DELAY_US(100000);
+		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
+
+
+		DELAY_US(400000);
+	}
+}
+
+//
+// InitSystem - Used to initialize the system.
+// This is the general start-up routine.
+//
+void InitSystem(void) {
 	//
 	// If running from flash copy RAM only functions to RAM
 	//
@@ -144,17 +212,17 @@ void main() {
 	//
 	// Initialize SCIA
 	//
-	scia_init();
+	ConfigSCIA();
 
 	//
 	// Initialize PWM
 	//
-	init_PWMDriver();
+	ConfigPWMDriver();
 
 	//
 	// Configure the ADCs and power them up
 	//
-	ConfigureADC();
+	ConfigADC();
 
 	//
 	//Setup the ADCs for software conversions
@@ -162,82 +230,18 @@ void main() {
 	SetupADCSoftware();
 
 	//
-	// Initialize GPIOs for the LEDs and turn them off
-	//
-	EALLOW;
-	GpioCtrlRegs.GPADIR.bit.GPIO31 = 1;
-	GpioCtrlRegs.GPBDIR.bit.GPIO34 = 1;
-	GpioDataRegs.GPADAT.bit.GPIO31 = 1;
-	GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
-	EDIS;
-
-	//
 	// Enable global Interrupts and higher priority real-time debug events:
 	// Only do this once, in main!!
 	//
 	EINT;   // Enable Global interrupt INTM
 	ERTM;   // Enable Global realtime interrupt DBGM
-
-	//
-	// Redirect STDOUT to SCI
-	//
-	status = add_device("scia", _SSA, SCI_open, SCI_close, SCI_read, SCI_write,
-						SCI_lseek, SCI_unlink, SCI_rename);
-	fid = fopen("scia","w");
-	freopen("scia:", "w", stdout);
-	setvbuf(stdout, NULL, _IONBF, 0);
-
-	//
-	// Twiddle LEDs
-	//
-	GpioDataRegs.GPADAT.bit.GPIO31 = 0;
-	GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
-
-	for(i = 0; i < 20; i++) {
-		GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-		GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
-		DELAY_US(50000);
-	}
-
-	//
-	// LEDs off
-	//
-	GpioDataRegs.GPADAT.bit.GPIO31 = 1;
-	GpioDataRegs.GPBDAT.bit.GPIO34 = 1;
-
-	//
-	// Main program loop - continually sample temperature
-	//
-	while(true) {
-		// Blink red LED to show program is running
-		GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
-
-		// Read ADC Values
-		readADCInput(&nVin_A1, &nVin_C2, &nVin_B5, &nVin_14);
-		t_SysMsrmnt.BatteryCurrent_Vin = (3300*(uint32_t)nVin_A1)/4095;
-		t_SysMsrmnt.PanelCurrent_Vin = (3300*(uint32_t)nVin_C2)/4095;
-		t_SysMsrmnt.BatteryVoltage_Vin = (3300*(uint32_t)nVin_B5)/4095;
-		t_SysMsrmnt.PanelVoltage_Vin = (3300*(uint32_t)nVin_14)/4095;
-
-		// Print results
-//		printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
-		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
-			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin);
-
-		// Wait, reset LED
-		DELAY_US(100000);
-		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
-
-
-		DELAY_US(400000);
-	}
 }
 
 //
 // ConfigureADC - Write ADC configurations and power up the ADC for both
 //                ADC A and ADC B
 //
-void ConfigureADC(void) {
+void ConfigADC(void) {
 	EALLOW;
 
 	//
@@ -418,7 +422,9 @@ int16_t readADCInput(int16_t* A1, int16_t* B5, int16_t* C2, int16_t* D14) {
 // scia_init - SCIA  8-bit word, baud rate 0x000F, default, 1 STOP bit, 
 // no parity
 //
-void scia_init() {
+void ConfigSCIA() {
+	volatile int status = 0;
+	volatile FILE *fid;
 	//
 	// Note: Clocks were turned on to the SCIA peripheral
 	// in the InitSysCtrl() function
@@ -446,6 +452,15 @@ void scia_init() {
 	SciaRegs.SCILBAUD.all    =53;
 
 	SciaRegs.SCICTL1.all =0x0023;  // Relinquish SCI from Reset
+
+	//
+	// Redirect STDOUT to SCI
+	//
+	status = add_device("scia", _SSA, SCI_open, SCI_close, SCI_read, SCI_write,
+						SCI_lseek, SCI_unlink, SCI_rename);
+	fid = fopen("scia","w");
+	freopen("scia:", "w", stdout);
+	setvbuf(stdout, NULL, _IONBF, 0);
 
 	return;
 }
