@@ -73,6 +73,17 @@
 //
 SYSTEM_MEASUREMENT t_SysMsrmnt;
 
+// shared variables
+#pragma DATA_SECTION(rk, "CpuToCla1MsgRAM")
+#pragma DATA_SECTION(yk, "CpuToCla1MsgRAM")
+#pragma DATA_SECTION(uk, "Cla1ToCpuMsgRAM")
+float rk = 0.25f;
+float yk;
+float uk;
+
+#pragma DATA_SECTION(pi1, "Cla1DataRam1")
+DCL_PI_CLA pi1 = PI_CLA_DEFAULTS;
+
 //
 // Main
 //
@@ -131,10 +142,10 @@ void main() {
 
 		// Read ADC Values
 		readADCInput(&nVin_A1, &nVin_B5, &nVin_C2, &nVin_14);
-		t_SysMsrmnt.BatteryCurrent_Vin = (3300*(uint32_t)nVin_A1)/4095;
-		t_SysMsrmnt.PanelCurrent_Vin = (3300*(uint32_t)nVin_C2)/4095;
-		t_SysMsrmnt.BatteryVoltage_Vin = (3300*(uint32_t)nVin_B5)/4095;
-		t_SysMsrmnt.PanelVoltage_Vin = (3300*(uint32_t)nVin_14)/4095;
+		t_SysMsrmnt.BatteryCurrent_Vin = (3000*(uint32_t)nVin_A1)/4095;
+		t_SysMsrmnt.PanelCurrent_Vin = (3000*(uint32_t)nVin_C2)/4095;
+		t_SysMsrmnt.BatteryVoltage_Vin = (3000*(uint32_t)nVin_B5)/4095;
+		t_SysMsrmnt.PanelVoltage_Vin = (3000*(uint32_t)nVin_14)/4095;
 
 		// Print results
 		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
@@ -148,6 +159,96 @@ void main() {
 
 		DELAY_US(400000);
 	}
+}
+
+//
+// CLA_configClaMemory - Configure CLA memory sections
+//
+void CLA_configClaMemory(void)
+{
+    extern uint32_t Cla1funcsRunStart, Cla1funcsLoadStart, Cla1funcsLoadSize;
+
+    EALLOW;
+#ifdef _FLASH
+    //
+    // Copy over code from FLASH to RAM
+    //
+    memcpy((uint32_t *)&Cla1funcsRunStart, (uint32_t *)&Cla1funcsLoadStart,
+            (uint32_t)&Cla1funcsLoadSize);
+#endif //_FLASH
+
+    //
+    // Initialize and wait for CLA1ToCPUMsgRAM
+    //
+    MemCfgRegs.MSGxINIT.bit.INIT_CLA1TOCPU = 1;
+    while(MemCfgRegs.MSGxINITDONE.bit.INITDONE_CLA1TOCPU != 1){};
+
+    //
+    // Initialize and wait for CPUToCLA1MsgRAM
+    //
+    MemCfgRegs.MSGxINIT.bit.INIT_CPUTOCLA1 = 1;
+    while(MemCfgRegs.MSGxINITDONE.bit.INITDONE_CPUTOCLA1 != 1){};
+
+    //
+    // Select LS4RAM and LS5RAM to be the programming space for the CLA
+    // First configure the CLA to be the master for LS4 and LS5 and then
+    // set the space to be a program block
+    //
+    MemCfgRegs.LSxMSEL.bit.MSEL_LS4 = 1;
+    MemCfgRegs.LSxCLAPGM.bit.CLAPGM_LS4 = 1;
+    MemCfgRegs.LSxMSEL.bit.MSEL_LS5 = 1;
+    MemCfgRegs.LSxCLAPGM.bit.CLAPGM_LS5 = 1;
+
+    EDIS;
+}
+
+//
+// CLA_initCpu1Cla1 - Initialize CLA1 task vectors and end of task interrupts
+//
+void CLA_initCpu1Cla1(void)
+{
+    //
+    // Compute all CLA task vectors
+    // On Type-1 CLAs the MVECT registers accept full 16-bit task addresses as
+    // opposed to offsets used on older Type-0 CLAs
+    //
+    EALLOW;
+//    Cla1Regs.MVECT1 = (uint16_t)(&Cla1Task1);
+//    Cla1Regs.MVECT2 = (uint16_t)(&Cla1Task2);
+//    Cla1Regs.MVECT3 = (uint16_t)(&Cla1Task3);
+//    Cla1Regs.MVECT4 = (uint16_t)(&Cla1Task4);
+//    Cla1Regs.MVECT5 = (uint16_t)(&Cla1Task5);
+//    Cla1Regs.MVECT6 = (uint16_t)(&Cla1Task6);
+//    Cla1Regs.MVECT7 = (uint16_t)(&Cla1Task7);
+//    Cla1Regs.MVECT8 = (uint16_t)(&Cla1Task8);
+
+    //
+    // Enable the IACK instruction to start a task on CLA in software
+    // for all  8 CLA tasks. Also, globally enable all 8 tasks (or a
+    // subset of tasks) by writing to their respective bits in the
+    // MIER register
+    //
+    Cla1Regs.MCTL.bit.IACKE = 1;
+    Cla1Regs.MIER.all = 0x00FF;
+
+    //
+    // Configure the vectors for the end-of-task interrupt for all
+    // 8 tasks
+    //
+//    PieVectTable.CLA1_1_INT = &cla1Isr1;
+//    PieVectTable.CLA1_2_INT = &cla1Isr2;
+//    PieVectTable.CLA1_3_INT = &cla1Isr3;
+//    PieVectTable.CLA1_4_INT = &cla1Isr4;
+//    PieVectTable.CLA1_5_INT = &cla1Isr5;
+//    PieVectTable.CLA1_6_INT = &cla1Isr6;
+//    PieVectTable.CLA1_7_INT = &cla1Isr7;
+//    PieVectTable.CLA1_8_INT = &cla1Isr8;
+
+    //
+    // Enable CLA interrupts at the group and subgroup levels
+    //
+    PieCtrlRegs.PIEIER11.all = 0xFFFF;
+    IER |= (M_INT11 );
 }
 
 //
@@ -208,6 +309,9 @@ void InitSystem(void) {
 	// This function is found in F2837xD_PieVect.c.
 	//
 	InitPieVectTable();
+
+	CLA_configClaMemory();
+	CLA_initCpu1Cla1();
 
 	//
 	// Initialize SCIA
