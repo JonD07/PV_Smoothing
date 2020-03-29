@@ -20,6 +20,8 @@
 #include "F28x_Project.h"     // DSP28x Headerfile
 #include "PWMDriver.h"
 #include "sci_io.h"
+#include "CLA_shared.h"
+//#include "DCLCLA.h"
 
 //
 // Globals

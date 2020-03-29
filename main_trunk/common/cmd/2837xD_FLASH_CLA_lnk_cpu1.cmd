@@ -86,13 +86,14 @@ SECTIONS
    /* Allocate program areas: */
    .cinit           : > FLASHB      PAGE = 0, ALIGN(4)
    .pinit           : > FLASHB,     PAGE = 0, ALIGN(4)
-   .text            : > FLASHB      PAGE = 0, ALIGN(4)
+   .text            : > FLASHB | FLASHC | FLASHD | FLASHE      PAGE = 0, ALIGN(4)
    codestart        : > BEGIN       PAGE = 0, ALIGN(4)
 
    /* Allocate uninitalized data sections: */
    .stack           : > RAMM1        PAGE = 1
    .ebss            : > RAMLS2       PAGE = 1
    .esysmem         : > RAMLS2       PAGE = 1
+   .cio             : > RAMLS2       PAGE = 1
 
    /* Initalized sections go in Flash */
    .econst          : > FLASHB      PAGE = 0, ALIGN(4)
