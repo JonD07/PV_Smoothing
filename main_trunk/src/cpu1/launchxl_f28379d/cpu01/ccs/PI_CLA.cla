@@ -1,0 +1,82 @@
+/* PI_CLA.cla
+ *
+ *  Created on: Mar 28, 2020
+ *      Author: Jonathan Diller
+ */
+
+#include "CLA_shared.h"
+
+
+__interrupt void Cla1Task1 ( void )
+{
+    //
+    //Local Variables
+    //
+    int xTblIdx; //integer valued Table index
+    float A0,A1,A2; //Table coefficients
+    float *entry;
+    float result;
+
+    //
+    //Preprocessing
+    //
+    __mdebugstop();
+    xTblIdx = fVal * TABLE_SIZE_M_1; //convert table index to u16-bits
+    xTblIdx = xTblIdx * 3; //Table is ordered as 3 32-bit coefficients, the
+                           //index points to these triplets, hence the *3*sizeof(float)
+    entry = &CLAasinTable[xTblIdx];
+    A0 = *entry++;
+    A1 = *entry++;
+    A2 = *entry;
+
+
+    result = A0 + fVal*(A1 + A2*fVal);
+
+    //
+    //Post processing
+    //
+    if(fVal < 0)
+    {
+        result = - result;
+    }
+
+    fResult = result;
+}
+
+__interrupt void Cla1Task2 ( void )
+{
+
+}
+
+// task 3 contains the PI controller
+__interrupt void Cla1Task3 ( void )
+{
+}
+
+__interrupt void Cla1Task4 ( void )
+{
+
+}
+
+__interrupt void Cla1Task5 ( void )
+{
+
+}
+
+__interrupt void Cla1Task6 ( void )
+{
+
+}
+
+__interrupt void Cla1Task7 ( void )
+{
+
+}
+
+__interrupt void Cla1Task8 ( void )
+{
+
+}
+
+// end of file
+

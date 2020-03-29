@@ -1,3 +1,19 @@
+// .cmd file
+// Modified to include CLA programming
+
+// The user must define CLA_C in the project linker settings if using the
+// CLA C compiler
+// Project Properties -> C2000 Linker -> Advanced Options -> Command File
+// Preprocessing -> --define
+#ifdef CLA_C
+// Define a size for the CLA scratchpad area that will be used
+// by the CLA compiler for local symbols and temps
+// Also force references to the special symbols that mark the
+// scratchpad are.
+CLA_SCRATCHPAD_SIZE = 0x100;
+--undef_sym=__cla_scratchpad_end
+--undef_sym=__cla_scratchpad_start
+#endif //CLA_C
 
 MEMORY
 {
@@ -12,7 +28,9 @@ PAGE 0 :  /* Program Memory */
    RAMLS1          	: origin = 0x008800, length = 0x000800
    RAMLS2      		: origin = 0x009000, length = 0x000800
    RAMLS3      		: origin = 0x009800, length = 0x000800
-   RAMLS4      		: origin = 0x00A000, length = 0x000800
+   /* For CLA */
+   RAMLS4_5      		: origin = 0x00A000, length = 0x001000
+   
    RAMGS14          : origin = 0x01A000, length = 0x001000     /* Only Available on F28379D, F28377D, F28375D devices. Remove line on other devices. */
    RAMGS15          : origin = 0x01B000, length = 0x001000     /* Only Available on F28379D, F28377D, F28375D devices. Remove line on other devices. */
    RESET           	: origin = 0x3FFFC0, length = 0x000002
@@ -59,6 +77,9 @@ PAGE 1 : /* Data Memory */
 
    CPU2TOCPU1RAM   : origin = 0x03F800, length = 0x000400
    CPU1TOCPU2RAM   : origin = 0x03FC00, length = 0x000400
+
+   CLA1_MSGRAMLOW   : origin = 0x001480,   length = 0x000080
+   CLA1_MSGRAMHIGH  : origin = 0x001500,   length = 0x000080
 }
 
 SECTIONS
@@ -87,6 +108,22 @@ SECTIONS
    SHARERAMGS1		: > RAMGS1,		PAGE = 1
    ramgs0           : > RAMGS0,     PAGE = 1
    ramgs1           : > RAMGS1,     PAGE = 1
+   
+    /* CLA specific sections */
+   Cla1Prog         : LOAD = FLASHD,
+                      RUN = RAMLS4_5,
+                      LOAD_START(_Cla1funcsLoadStart),
+                      LOAD_END(_Cla1funcsLoadEnd),
+                      RUN_START(_Cla1funcsRunStart),
+                      LOAD_SIZE(_Cla1funcsLoadSize),
+                      PAGE = 0, ALIGN(4)
+
+   CLADataLS0		: > RAMLS0, PAGE=0
+   CLADataLS1		: > RAMLS1, PAGE=0
+
+   Cla1ToCpuMsgRAM  : > CLA1_MSGRAMLOW,   PAGE = 1
+   CpuToCla1MsgRAM  : > CLA1_MSGRAMHIGH,  PAGE = 1
+					  
 
 #ifdef __TI_COMPILER_VERSION__
 	#if __TI_COMPILER_VERSION__ >= 15009000
@@ -133,6 +170,26 @@ SECTIONS
    Filter3_RegsFile : > RAMGS3,	PAGE = 1, fill=0x3333
    Filter4_RegsFile : > RAMGS4,	PAGE = 1, fill=0x4444
    Difference_RegsFile : >RAMGS5, 	PAGE = 1, fill=0x3333
+
+#ifdef CLA_C
+   /* CLA C compiler sections */
+   //
+   // Must be allocated to memory the CLA has write access to
+   //
+   CLAscratch       :
+                     { *.obj(CLAscratch)
+                     . += CLA_SCRATCHPAD_SIZE;
+                     *.obj(CLAscratch_end) } >  RAMLS1,  PAGE = 0
+
+   .scratchpad      : > RAMLS1,       PAGE = 0
+   .bss_cla		    : > RAMLS1,       PAGE = 0
+   .const_cla	    :  LOAD = FLASHB,
+                       RUN = RAMLS1,
+                       RUN_START(_Cla1ConstRunStart),
+                       LOAD_START(_Cla1ConstLoadStart),
+                       LOAD_SIZE(_Cla1ConstLoadSize),
+                       PAGE = 0
+#endif //CLA_C
 }
 
 /*
