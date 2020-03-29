@@ -216,6 +216,8 @@ void main() {
 
 	// test CLA
 	float asin = 0;
+	char sBuff[50];
+	int32_t temp;
 
 	//
 	// Initialize the system
@@ -276,8 +278,11 @@ void main() {
 
 		// Print results
 		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
-		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV, asin(0.75) = %f\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
-			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin, asin);
+		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
+			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin);
+
+		temp = (int32_t)(asin * 100);
+		printf("asin(0.5) = %" PRId32 ".%" PRId32 "\n\r", temp/100, temp%100);
 
 		// Wait, reset LED
 		DELAY_US(100000);
@@ -644,7 +649,7 @@ float CLA_runTest(void)
 //        }
 //    }
 
-    fVal= 0.75;
+    fVal= 0.5;
     Cla1ForceTask1andWait();
 
     return fResult;
