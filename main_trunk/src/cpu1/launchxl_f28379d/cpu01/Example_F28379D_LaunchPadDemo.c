@@ -272,8 +272,8 @@ void main() {
 		// Read ADC Values
 		readADCInput(&nVin_A1, &nVin_B5, &nVin_C2, &nVin_14);
 		t_SysMsrmnt.BatteryCurrent_Vin = (3000*(uint32_t)nVin_A1)/4095;
-		t_SysMsrmnt.PanelCurrent_Vin = (3000*(uint32_t)nVin_C2)/4095;
 		t_SysMsrmnt.BatteryVoltage_Vin = (3000*(uint32_t)nVin_B5)/4095;
+		t_SysMsrmnt.PanelCurrent_Vin = (3000*(uint32_t)nVin_C2)/4095;
 		t_SysMsrmnt.PanelVoltage_Vin = (3000*(uint32_t)nVin_14)/4095;
 
 		// Print results
