@@ -8,7 +8,7 @@
 #ifndef CLA_SHARED_H_
 #define CLA_SHARED_H_
 
-//#include "DCLCLA.h"
+#include "DCLCLA.h"
 #include "F2837xD_Cla_typedefs.h"
 #include <stdint.h>
 
@@ -36,6 +36,12 @@ extern "C" {
 extern float y[];            //Result vector
 extern float fVal;           //Holds the input argument to the task
 extern float fResult;        //The arsine of the input argument
+
+/* shared controller data */
+extern float rk;
+extern float yk;
+extern float uk;
+extern DCL_PI_CLA pi1;
 
 //
 //Task 2 (C) Variables

@@ -4,43 +4,51 @@
  *      Author: Jonathan Diller
  */
 
+#include "DCLCLA.h"
 #include "CLA_shared.h"
 
 
 __interrupt void Cla1Task1 ( void )
 {
-    //
-    //Local Variables
-    //
-    int xTblIdx; //integer valued Table index
-    float A0,A1,A2; //Table coefficients
-    float *entry;
-    float result;
+//    //
+//    //Local Variables
+//    //
+//    int xTblIdx; //integer valued Table index
+//    float A0,A1,A2; //Table coefficients
+//    float *entry;
+//    float result;
+//
+//    //
+//    //Preprocessing
+//    //
+//    __mdebugstop();
+//    xTblIdx = fVal * TABLE_SIZE_M_1; //convert table index to u16-bits
+//    xTblIdx = xTblIdx * 3; //Table is ordered as 3 32-bit coefficients, the
+//                           //index points to these triplets, hence the *3*sizeof(float)
+//    entry = &CLAasinTable[xTblIdx];
+//    A0 = *entry++;
+//    A1 = *entry++;
+//    A2 = *entry;
+//
+//
+//    result = A0 + fVal*(A1 + A2*fVal);
+//
+//    //
+//    //Post processing
+//    //
+//    if(fVal < 0)
+//    {
+//        result = - result;
+//    }
+//
+//    fResult = result;
 
-    //
-    //Preprocessing
-    //
-    __mdebugstop();
-    xTblIdx = fVal * TABLE_SIZE_M_1; //convert table index to u16-bits
-    xTblIdx = xTblIdx * 3; //Table is ordered as 3 32-bit coefficients, the
-                           //index points to these triplets, hence the *3*sizeof(float)
-    entry = &CLAasinTable[xTblIdx];
-    A0 = *entry++;
-    A1 = *entry++;
-    A2 = *entry;
+	// run the PI controller
+	uk = DCL_runPI_L1(&pi1, rk, yk);
 
-
-    result = A0 + fVal*(A1 + A2*fVal);
-
-    //
-    //Post processing
-    //
-    if(fVal < 0)
-    {
-        result = - result;
-    }
-
-    fResult = result;
+	__mnop();
+	__mnop();
+	__mnop();
 }
 
 __interrupt void Cla1Task2 ( void )

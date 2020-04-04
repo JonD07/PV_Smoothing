@@ -63,15 +63,24 @@
 // Defines
 //
 
-//
 // Micro-seconds to wait for ADC conversion. Longer than necessary.
-//  
 #define CONV_WAIT 1L 
 
 //
 // Globals
 //
 SYSTEM_MEASUREMENT t_SysMsrmnt;
+
+// shared variables
+#pragma DATA_SECTION(rk, "CpuToCla1MsgRAM")
+#pragma DATA_SECTION(yk, "CpuToCla1MsgRAM")
+#pragma DATA_SECTION(uk, "Cla1ToCpuMsgRAM")
+float rk = 0.25f;
+float yk;
+float uk;
+
+#pragma DATA_SECTION(pi1, "CLADataLS0")
+DCL_PI_CLA pi1 = PI_CLA_DEFAULTS;
 
 //
 //Task 1 (C) Variables
@@ -203,6 +212,12 @@ __interrupt void cla1Isr8();
 uint16_t pass=0;
 uint16_t fail=0;
 
+int32_t nVinA;	// BatteryCurrent_Vin
+int32_t nVinB;	// BatteryVoltage_Vin
+int32_t nVinC;	// PanelCurrent_Vin
+int32_t nVinD;	// PanelVoltage_Vin
+float Duty;
+
 //
 // Main
 //
@@ -214,15 +229,25 @@ void main() {
 	int16_t nVin_14;	// PanelVoltage_Vin
 						// on ADC D
 
-	// test CLA
-	float asin = 0;
-	char sBuff[50];
-	int32_t temp;
+//	// test CLA
+//	float asin = 0;
+	int32_t temp1;
+	int32_t temp2;
 
 	//
 	// Initialize the system
 	//
 	InitSystem();
+
+	//
+	// Initialize PI Controller
+	//
+	pi1.Kp = 5.5f;
+	pi1.Ki = 0.015f;
+	pi1.i10 = 0.0f;
+	pi1.i6 = 1.0f;
+	pi1.Umax = 10.2f;
+	pi1.Umin = -10.2f;
 
 	//
 	// Light display - show user system has started up
@@ -264,28 +289,41 @@ void main() {
 		// Blink red LED to show program is running
 		GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
 
-		//
-		// Run CLA test
-		//
-		asin = CLA_runTest();
-
 		// Read ADC Values
 		readADCInput(&nVin_A1, &nVin_B5, &nVin_C2, &nVin_14);
-		t_SysMsrmnt.BatteryCurrent_Vin = (3000*(uint32_t)nVin_A1)/4095;
-		t_SysMsrmnt.BatteryVoltage_Vin = (3000*(uint32_t)nVin_B5)/4095;
-		t_SysMsrmnt.PanelCurrent_Vin = (3000*(uint32_t)nVin_C2)/4095;
-		t_SysMsrmnt.PanelVoltage_Vin = (3000*(uint32_t)nVin_14)/4095;
+		nVinA = t_SysMsrmnt.BatteryCurrent_Vin = (3000*(uint32_t)nVin_A1)/4095;
+		nVinB = t_SysMsrmnt.BatteryVoltage_Vin = (3000*(uint32_t)nVin_B5)/4095;
+		nVinC = t_SysMsrmnt.PanelCurrent_Vin = (3000*(uint32_t)nVin_C2)/4095;
+		nVinD = t_SysMsrmnt.PanelVoltage_Vin = (3000*(uint32_t)nVin_14)/4095;
 
-		// Print results
+		//// Run CLA test
+		// asin = CLA_runTest();
+
+		// temp = (int32_t)(asin * 100);
+		// printf("asin(0.5) = %" PRId32 ".%" PRId32 "\n\r", temp/100, temp%100);
+
+		//// Print results
 		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
+
 		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
 			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin);
 
-		temp = (int32_t)(asin * 100);
-		printf("asin(0.5) = %" PRId32 ".%" PRId32 "\n\r", temp/100, temp%100);
+		// Convert input to volts, assign to input yk
+		yk = ((float) t_SysMsrmnt.BatteryCurrent_Vin) / 1000.0f;
+
+		// trigger PI controller on CLA
+		EALLOW;
+	    Cla1ForceTask1andWait();
+
+		// write u(k) to PWM
+		Duty = (uk / 2.0f + 0.5f) * (float) EPwm1Regs.TBPRD;
+//		EPwm1Regs.CMPA.half.CMPA = (Uint16) Duty;
+		temp1 = (int32_t)(yk*100);
+		temp2 = (int32_t)(uk*100);
+		printf("yk = %" PRId32 ".%" PRId32 ", uk = %" PRId32 ".%" PRId32 ", duty cycle = %hu, TBPRD: %hu\n\r", temp1/100, temp1%100, temp2/100, temp2%100, (Uint16) Duty, EPwm1Regs.TBPRD);
 
 		// Wait, reset LED
-		DELAY_US(100000);
+		DELAY_US(90000);
 		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
 

@@ -21,7 +21,7 @@
 #include "PWMDriver.h"
 #include "sci_io.h"
 #include "CLA_shared.h"
-//#include "DCLCLA.h"
+#include "DCLCLA.h"
 
 //
 // Globals

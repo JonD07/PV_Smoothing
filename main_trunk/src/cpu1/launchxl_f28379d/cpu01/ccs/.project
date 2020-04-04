@@ -31,6 +31,11 @@
 			<locationURI>PARENT-5-PROJECT_LOC/DCL/c28/include/DCLCLA.h</locationURI>
 		</link>
 		<link>
+			<name>DCL_PI_L1.asm</name>
+			<type>1</type>
+			<locationURI>PARENT-5-PROJECT_LOC/DCL/c28/source/DCL_PI_L1.asm</locationURI>
+		</link>
+		<link>
 			<name>F28379D_Main.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Example_F28379D_LaunchPadDemo.c</locationURI>
