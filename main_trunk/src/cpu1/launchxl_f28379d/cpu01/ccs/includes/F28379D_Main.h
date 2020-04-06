@@ -35,5 +35,15 @@ void ConfigADC(void);
 void SetupADCSoftware(void);
 int16_t readADCInput(int16_t* A1, int16_t* B5, int16_t* C2, int16_t* D14);
 void ConfigSCIA();
+void CLA_configClaMemory(void);
+void CLA_initCpu1Cla1(void);
+__interrupt void cla1Isr1();
+__interrupt void cla1Isr2();
+__interrupt void cla1Isr3();
+__interrupt void cla1Isr4();
+__interrupt void cla1Isr5();
+__interrupt void cla1Isr6();
+__interrupt void cla1Isr7();
+__interrupt void cla1Isr8();
 
 #endif /* INCLUDES_F28379D_MAIN_H_ */

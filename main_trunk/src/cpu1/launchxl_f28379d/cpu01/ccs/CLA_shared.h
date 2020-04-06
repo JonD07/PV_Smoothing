@@ -19,12 +19,6 @@ extern "C" {
 //
 // Defines
 //
-#define BUFFER_SIZE       64
-#define TABLE_SIZE        64
-#define TABLE_SIZE_M_1    TABLE_SIZE-1
-#define PIBYTWO           1.570796327
-#define PI                3.141592653589
-#define INV2PI            0.159154943
 
 //
 // Globals
@@ -33,10 +27,6 @@ extern "C" {
 //
 //Task 1 (C) Variables
 //
-extern float y[];            //Result vector
-extern float fVal;           //Holds the input argument to the task
-extern float fResult;        //The arsine of the input argument
-
 /* shared controller data */
 extern float rk;
 extern float yk;
