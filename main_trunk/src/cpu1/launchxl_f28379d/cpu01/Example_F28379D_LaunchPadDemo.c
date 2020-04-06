@@ -75,7 +75,7 @@ SYSTEM_MEASUREMENT t_SysMsrmnt;
 #pragma DATA_SECTION(rk, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(yk, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(uk, "Cla1ToCpuMsgRAM")
-float rk = 0.25f;
+float rk = -4.0f;
 float yk;
 float uk;
 
@@ -110,13 +110,16 @@ void main() {
 
 	//
 	// Initialize PI Controller
-	//
-	pi1.Kp = 5.5f;
-	pi1.Ki = 0.015f;
+	pi1.Kp = 0.09f;
+	pi1.Ki = 20.0f;
 	pi1.i10 = 0.0f;
 	pi1.i6 = 1.0f;
 	pi1.Umax = 10.2f;
 	pi1.Umin = -10.2f;
+
+	//
+	// Get PWM Config struct
+	t_pwmConfig = getPWMConfig(1);
 
 	//
 	// Light display - show user system has started up
@@ -180,7 +183,8 @@ void main() {
 
 		// write u(k) to PWM
 		Duty = (uk / 2.0f + 0.5f) * (float) EPwm1Regs.TBPRD;
-//		EPwm1Regs.CMPA.half.CMPA = (Uint16) Duty;
+		t_pwmConfig->EPwmCMP_A = (Uint16) Duty;
+
 		temp1 = (int32_t)(yk*100);
 		temp2 = (int32_t)(uk*100);
 		printf("yk = %" PRId32 ".%" PRId32 ", uk = %" PRId32 ".%d, duty cycle = %hu, TBPRD: %hu\n\r", temp1/100, temp1%100, temp2/100, abs(temp2%100), (Uint16) Duty, EPwm1Regs.TBPRD);
