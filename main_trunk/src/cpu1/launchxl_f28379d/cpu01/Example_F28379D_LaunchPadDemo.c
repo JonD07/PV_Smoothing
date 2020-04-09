@@ -72,6 +72,7 @@
 SYSTEM_MEASUREMENT t_SysMsrmnt;
 
 // shared variables
+// PI 1
 #pragma DATA_SECTION(rk, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(yk, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(uk, "Cla1ToCpuMsgRAM")
@@ -81,6 +82,17 @@ float uk;
 
 #pragma DATA_SECTION(pi1, "CLADataLS0")
 DCL_PI_CLA pi1 = PI_CLA_DEFAULTS;
+
+// PI 2
+#pragma DATA_SECTION(rk_2, "CpuToCla1MsgRAM")
+#pragma DATA_SECTION(yk_2, "CpuToCla1MsgRAM")
+#pragma DATA_SECTION(uk_2, "Cla1ToCpuMsgRAM")
+float rk_2 = -4.0f;
+float yk_2;
+float uk_2;
+
+#pragma DATA_SECTION(pi2, "CLADataLS0")
+DCL_PI_CLA pi2 = PI_CLA_DEFAULTS;
 
 int32_t nVinA;	// BatteryCurrent_Vin
 int32_t nVinB;	// BatteryVoltage_Vin
@@ -110,12 +122,20 @@ void main() {
 
 	//
 	// Initialize PI Controller
-	pi1.Kp = 0.09f;
-	pi1.Ki = 20.0f;
+	// PI 1
+	pi1.Kp = 0.2f;
+	pi1.Ki = 3.0f;
 	pi1.i10 = 0.0f;
 	pi1.i6 = 1.0f;
-	pi1.Umax = 10.2f;
-	pi1.Umin = -10.2f;
+	pi1.Umax = 5.0f;
+	pi1.Umin = -5.0f;
+	// PI 2
+	pi2.Kp = 3.6f;
+	pi2.Ki = 36.0f;
+	pi2.i10 = 0.0f;
+	pi2.i6 = 1.0f;
+	pi2.Umax = 5.0f;
+	pi2.Umin = -5.0f;
 
 	//
 	// Get PWM Config struct
