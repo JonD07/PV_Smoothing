@@ -23,19 +23,19 @@ extern "C" {
 //
 // Globals
 //
+extern float rk;
+extern float yk;
+extern float uk;
 
 //
 //Task 1 (C) Variables
 //
-/* shared controller data */
-extern float rk;
-extern float yk;
-extern float uk;
-extern DCL_PI_CLA pi1;
+extern DCL_PI_CLA pi_Boost;
 
 //
 //Task 2 (C) Variables
 //
+extern DCL_PI_CLA pi_Buck;
 
 //
 //Task 3 (C) Variables

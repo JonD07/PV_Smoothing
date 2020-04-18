@@ -11,7 +11,7 @@
 __interrupt void Cla1Task1 ( void )
 {
 	// run the PI controller
-	uk = DCL_runPI_L1(&pi1, rk, yk);
+	uk = DCL_runPI_L1(&pi_Boost, rk, yk);
 
 	__mnop();
 	__mnop();
@@ -20,7 +20,12 @@ __interrupt void Cla1Task1 ( void )
 
 __interrupt void Cla1Task2 ( void )
 {
+	// run the PI controller
+	uk = DCL_runPI_L1(&pi_Buck, rk, yk);
 
+	__mnop();
+	__mnop();
+	__mnop();
 }
 
 // task 3 contains the PI controller

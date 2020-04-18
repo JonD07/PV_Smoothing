@@ -21,10 +21,15 @@
 // PWM Frequency = TBCTR / EPWM1_TIMER_TBPRD
 // TBCTR = SYS_COCK / (HSPCLKDIV * CLKDIV)
 #define EPWM1_TIMER_TBPRD	1000  // Period register
+#define EPWM2_TIMER_TBPRD	1000  // Period register
 #define EPWM1_MAX_CMPA		EPWM1_TIMER_TBPRD - 20
 #define EPWM1_MIN_CMPA		20
 #define EPWM1_MAX_CMPB		EPWM1_TIMER_TBPRD - 20
 #define EPWM1_MIN_CMPB		20
+#define EPWM2_MAX_CMPA		EPWM1_TIMER_TBPRD - 20
+#define EPWM2_MIN_CMPA		20
+#define EPWM2_MAX_CMPB		EPWM1_TIMER_TBPRD - 20
+#define EPWM2_MIN_CMPB		20
 
 #define EPWM_CMP_UP			1
 #define EPWM_CMP_DOWN		0
@@ -38,7 +43,9 @@
 //
 void ConfigPWMDriver(void);
 void InitEPwm1(void);
+void InitEPwm2(void);
 __interrupt void epwm1_isr(void);
+__interrupt void epwm2_isr(void);
 EPWM_CONFIG* getPWMConfig(Uint16);
 
 #endif /* INCLUDES_PWMDRIVER_H_ */

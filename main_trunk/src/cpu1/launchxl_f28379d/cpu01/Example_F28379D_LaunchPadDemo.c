@@ -72,32 +72,25 @@
 SYSTEM_MEASUREMENT t_SysMsrmnt;
 
 // shared variables
-// PI 1
 #pragma DATA_SECTION(rk, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(yk, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(uk, "Cla1ToCpuMsgRAM")
-float rk = -4.0f;
+float rk = 0.25f;
 float yk;
 float uk;
 
-#pragma DATA_SECTION(pi1, "CLADataLS0")
-DCL_PI_CLA pi1 = PI_CLA_DEFAULTS;
+// PI Boost
+#pragma DATA_SECTION(pi_Boost, "CLADataLS0")
+DCL_PI_CLA pi_Boost = PI_CLA_DEFAULTS;
 
-// PI 2
-#pragma DATA_SECTION(rk_2, "CpuToCla1MsgRAM")
-#pragma DATA_SECTION(yk_2, "CpuToCla1MsgRAM")
-#pragma DATA_SECTION(uk_2, "Cla1ToCpuMsgRAM")
-float rk_2 = -4.0f;
-float yk_2;
-float uk_2;
+// PI Buck
+#pragma DATA_SECTION(pi_Buck, "CLADataLS0")
+DCL_PI_CLA pi_Buck = PI_CLA_DEFAULTS;
 
-#pragma DATA_SECTION(pi2, "CLADataLS0")
-DCL_PI_CLA pi2 = PI_CLA_DEFAULTS;
-
-int32_t nVinA;	// BatteryCurrent_Vin
-int32_t nVinB;	// BatteryVoltage_Vin
-int32_t nVinC;	// PanelCurrent_Vin
-int32_t nVinD;	// PanelVoltage_Vin
+uint32_t nVinA;	// BatteryCurrent_Vin
+uint32_t nVinB;	// BatteryVoltage_Vin
+uint32_t nVinC;	// PanelCurrent_Vin
+uint32_t nVinD;	// PanelVoltage_Vin
 float Duty;
 
 //
@@ -122,24 +115,31 @@ void main() {
 
 	//
 	// Initialize PI Controller
-	// PI 1
-	pi1.Kp = 0.2f;
-	pi1.Ki = 3.0f;
-	pi1.i10 = 0.0f;
-	pi1.i6 = 1.0f;
-	pi1.Umax = 5.0f;
-	pi1.Umin = -5.0f;
-	// PI 2
-	pi2.Kp = 3.6f;
-	pi2.Ki = 36.0f;
-	pi2.i10 = 0.0f;
-	pi2.i6 = 1.0f;
-	pi2.Umax = 5.0f;
-	pi2.Umin = -5.0f;
+	// PI Boost
+	pi_Boost.Kp = 0.02f;
+	pi_Boost.Ki = 0.3f;
+	pi_Boost.i11 = 0.0f;
+	pi_Boost.i10 = 0.0f;
+	pi_Boost.i6 = 0.0f;
+	pi_Boost.Umax = 1.0f;
+	pi_Boost.Umin = 0.0f;
+	pi_Boost.Imax = 0.9f;
+	pi_Boost.Imin = 0.0f;
+	// PI Buck
+	pi_Buck.Kp = 0.02f;
+	pi_Buck.Ki = 0.3f;
+	pi_Buck.i11 = 0.0f;
+	pi_Buck.i10 = 0.0f;
+	pi_Buck.i6 = 0.0f;
+	pi_Buck.Umax = 1.0f;
+	pi_Buck.Umin = 0.0f;
+	pi_Buck.Imax = 0.9f;
+	pi_Buck.Imin = 0.0f;
 
 	//
 	// Get PWM Config struct
-	t_pwmConfig = getPWMConfig(1);
+	t_pwmConfig1 = getPWMConfig(1);
+	t_pwmConfig2 = getPWMConfig(2);
 
 	//
 	// Light display - show user system has started up
@@ -183,38 +183,64 @@ void main() {
 
 		// Read ADC Values
 		readADCInput(&nVin_A1, &nVin_B5, &nVin_C2, &nVin_14);
-		nVinA = t_SysMsrmnt.BatteryCurrent_Vin = (3000*(uint32_t)nVin_A1)/4095;
-		nVinB = t_SysMsrmnt.BatteryVoltage_Vin = (3000*(uint32_t)nVin_B5)/4095;
-		nVinC = t_SysMsrmnt.PanelCurrent_Vin = (3000*(uint32_t)nVin_C2)/4095;
-		nVinD = t_SysMsrmnt.PanelVoltage_Vin = (3000*(uint32_t)nVin_14)/4095;
+		nVinA = (3000*(uint32_t)nVin_A1)/4095;
+		nVinB = (3000*(uint32_t)nVin_B5)/4095;
+		nVinC = (3000*(uint32_t)nVin_C2)/4095;
+		nVinD = (3000*(uint32_t)nVin_14)/4095;
+
+		//// Print results
+		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
+		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", nVinA, nVinB, nVinC, nVinD);
+
+		t_SysMsrmnt.BatteryCurrent_Vin = 20*((Uint32)nVinA)/3 - 10000;
+		t_SysMsrmnt.BatteryVoltage_Vin = 5*((int32)nVinA)/4095;
+		t_SysMsrmnt.PanelCurrent_Vin = 20*((Uint32)nVinA)/3 - 10000;
+		t_SysMsrmnt.PanelVoltage_Vin = 25*(((int32)nVinA)/4095)/3;
 
 		//// Print results
 		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
 
-		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
+		printf("I_bat=%" PRId32 " mA, \tV_bat=%lu mV, \tI_pv=%" PRId32 " mA, \tV_pv=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
 			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin);
 
-		// Convert input to volts, assign to input yk
-		yk = ((float) t_SysMsrmnt.BatteryCurrent_Vin) / 1000.0f;
+		// Convert to amps, assign to input yk
+		if(t_SysMsrmnt.BatteryCurrent_Vin >= 0) {
+			rk = 1.0f;
+			yk = ((float) t_SysMsrmnt.BatteryCurrent_Vin) / 1000.0f;
 
-		// trigger PI controller on CLA
-		EALLOW;
-	    Cla1ForceTask1andWait();
+			// trigger PI controller for task 1 on CLA
+			EALLOW;
+		    Cla1ForceTask1andWait();
 
-		// write u(k) to PWM
-		Duty = (uk / 2.0f + 0.5f) * (float) EPwm1Regs.TBPRD;
-		t_pwmConfig->EPwmCMP_A = (Uint16) Duty;
+			// write u(k) to PWM
+			Duty = uk * (float) EPwm1Regs.TBPRD;
+			t_pwmConfig1->EPwmCMP_A = (Uint16) Duty;
+			t_pwmConfig2->EPwmCMP_A = 0;
+		}
+		else {
+			yk = ((float) t_SysMsrmnt.BatteryCurrent_Vin) / 1000.0f;
+			rk = -1.0;
+
+			// trigger PI controller for task 2 on CLA
+			EALLOW;
+		    Cla1ForceTask2andWait();
+
+			// write u(k) to PWM
+			Duty = uk * (float) EPwm2Regs.TBPRD;
+			t_pwmConfig2->EPwmCMP_A = (Uint16) Duty;
+			t_pwmConfig1->EPwmCMP_A = 0;
+		}
 
 		temp1 = (int32_t)(yk*100);
 		temp2 = (int32_t)(uk*100);
-		printf("yk = %" PRId32 ".%" PRId32 ", uk = %" PRId32 ".%d, duty cycle = %hu, TBPRD: %hu\n\r", temp1/100, temp1%100, temp2/100, abs(temp2%100), (Uint16) Duty, EPwm1Regs.TBPRD);
+		printf("yk = %" PRId32 ".%" PRId32 ", uk = %" PRId32 ".%d, Comp Val = %hu, TBPRD: %hu\n\r", temp1/100, temp1%100, temp2/100, abs(temp2%100), (Uint16) Duty, EPwm1Regs.TBPRD);
 
 		// Wait, reset LED
-		DELAY_US(90000);
+		DELAY_US(10000);
 		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
 
-		DELAY_US(400000);
+		DELAY_US(90000);
 	}
 }
 
@@ -669,7 +695,15 @@ __interrupt void cla1Isr1 ()
 //
 __interrupt void cla1Isr2 ()
 {
-    asm(" ESTOP0");
+    //
+    // Acknowledge the end-of-task interrupt for task 2
+    //
+    PieCtrlRegs.PIEACK.all = M_INT11;
+
+    //
+    // Uncomment to halt debugger and stop here
+    //
+//    asm(" ESTOP0");
 }
 
 //

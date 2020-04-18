@@ -26,7 +26,8 @@
 //
 // Globals
 //
-EPWM_CONFIG* t_pwmConfig;
+EPWM_CONFIG* t_pwmConfig1;
+EPWM_CONFIG* t_pwmConfig2;
 
 //
 // Prototypes

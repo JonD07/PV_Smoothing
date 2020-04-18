@@ -32,9 +32,9 @@ typedef struct
 typedef struct
 {
 	Uint32 BatteryVoltage_Vin;
-	Uint32 BatteryCurrent_Vin;
+	int32 BatteryCurrent_Vin;
 	Uint32 PanelVoltage_Vin;
-	Uint32 PanelCurrent_Vin;
+	int32 PanelCurrent_Vin;
 }SYSTEM_MEASUREMENT;
 
 
