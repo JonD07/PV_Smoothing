@@ -23,9 +23,13 @@ extern "C" {
 //
 // Globals
 //
-extern float rk;
-extern float yk;
-extern float uk;
+extern float rk_BuckBoost;
+extern float yk_BuckBoost;
+extern float uk_BuckBoost;
+
+extern float rk_Power;
+extern float yk_Power;
+extern float uk_Power;
 
 //
 //Task 1 (C) Variables
@@ -40,6 +44,7 @@ extern DCL_PI_CLA pi_Buck;
 //
 //Task 3 (C) Variables
 //
+extern DCL_PI_CLA pi_Power;
 
 //
 //Task 4 (C) Variables

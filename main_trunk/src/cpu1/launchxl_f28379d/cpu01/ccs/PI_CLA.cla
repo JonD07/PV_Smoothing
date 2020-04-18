@@ -8,29 +8,37 @@
 #include "CLA_shared.h"
 
 
+// task 1 contains the Boost PI controller
 __interrupt void Cla1Task1 ( void )
 {
-	// run the PI controller
-	uk = DCL_runPI_L1(&pi_Boost, rk, yk);
+	// run PI controller
+	uk_BuckBoost = DCL_runPI_L1(&pi_Boost, rk_BuckBoost, yk_BuckBoost);
 
 	__mnop();
 	__mnop();
 	__mnop();
 }
 
+// task 2 contains the Buck PI controller
 __interrupt void Cla1Task2 ( void )
 {
-	// run the PI controller
-	uk = DCL_runPI_L1(&pi_Buck, rk, yk);
+	// run PI controller
+	uk_BuckBoost = DCL_runPI_L1(&pi_Buck, rk_BuckBoost, yk_BuckBoost);
 
 	__mnop();
 	__mnop();
 	__mnop();
 }
 
-// task 3 contains the PI controller
+// task 3 contains the Power PI controller
 __interrupt void Cla1Task3 ( void )
 {
+	// run PI controller
+	uk_Power = DCL_runPI_L1(&pi_Power, rk_Power, yk_Power);
+
+	__mnop();
+	__mnop();
+	__mnop();
 }
 
 __interrupt void Cla1Task4 ( void )
