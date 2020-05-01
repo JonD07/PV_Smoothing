@@ -24,10 +24,18 @@
 #include "DCLCLA.h"
 
 //
+// Constants
+//
+const int32 POWER_RECORD_SIZE = 100;
+
+//
 // Globals
 //
 EPWM_CONFIG* t_pwmConfig1;
 EPWM_CONFIG* t_pwmConfig2;
+// Stores average power from PV panel
+float arr_nPowerRecord[100];
+int32 powerRecord_Index;
 
 //
 // Prototypes

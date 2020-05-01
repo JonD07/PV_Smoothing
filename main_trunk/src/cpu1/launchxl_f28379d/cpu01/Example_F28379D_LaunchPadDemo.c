@@ -75,7 +75,7 @@ SYSTEM_MEASUREMENT t_SysMsrmnt;
 #pragma DATA_SECTION(rk_BuckBoost, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(yk_BuckBoost, "CpuToCla1MsgRAM")
 #pragma DATA_SECTION(uk_BuckBoost, "Cla1ToCpuMsgRAM")
-float rk_BuckBoost = 0.25f;
+float rk_BuckBoost;
 float yk_BuckBoost;
 float uk_BuckBoost;
 
@@ -103,23 +103,29 @@ uint32_t nVinB;	// BatteryVoltage_Vin
 uint32_t nVinC;	// PanelCurrent_Vin
 uint32_t nVinD;	// PanelVoltage_Vin
 float Duty;
+float fAvgPower;
+float nCurrentPVPower;
+float nCurrentBatPower;
 
 //
 // Main
 //
 void main() {
-
+	//
+	// Local var declarations
 	int16_t nVin_A1;	// BatteryCurrent_Vin
 	int16_t nVin_B5;	// BatteryVoltage_Vin
 	int16_t nVin_C2;	// PanelCurrent_Vin
 	int16_t nVin_14;	// PanelVoltage_Vin
 						// on ADC D
-
 	// test CLA
 	int32_t temp1;
 	int32_t temp2;
 	int32_t temp3;
 	int32_t temp4;
+
+	int i;
+	powerRecord_Index = 0;
 
 	//
 	// Initialize the system
@@ -129,8 +135,8 @@ void main() {
 	//
 	// Initialize PI Controller
 	// PI Boost
-	pi_Boost.Kp = 0.2f;
-	pi_Boost.Ki = 3.0f;
+	pi_Boost.Kp = 0.1f;
+	pi_Boost.Ki = 1.5f;
 	pi_Boost.i11 = 0.0f;
 	pi_Boost.i10 = 0.0f;
 	pi_Boost.i6 = 0.0f;
@@ -158,7 +164,7 @@ void main() {
 	pi_Power.Umin = -8.0f;
 	pi_Power.Imax = 8.0f;
 	pi_Power.Imin = -8.0f;
-	rk_Power = 13.0;
+	rk_Power = 5.0;
 
 	//
 	// Get PWM Config struct
@@ -205,6 +211,9 @@ void main() {
 		// Blink red LED to show program is running
 		GpioDataRegs.GPBCLEAR.bit.GPIO34 = 1;
 
+
+		//
+		// Measure and record sensor data
 		// Read ADC Values
 		readADCInput(&nVin_A1, &nVin_B5, &nVin_C2, &nVin_14);
 		nVinA = (3000*(uint32_t)nVin_A1)/4095;
@@ -212,28 +221,43 @@ void main() {
 		nVinC = (3000*(uint32_t)nVin_C2)/4095;
 		nVinD = (3000*(uint32_t)nVin_14)/4095;
 
-		//// Print results
-		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
+		// Print results
 		printf("Volts read: \tA1=%lu mV, \tB5=%lu mV, \tC2=%lu mV, \tD14=%lu mV\n\r", nVinA, nVinB, nVinC, nVinD);
 
+		// Update t_SysMsrmnt
 		t_SysMsrmnt.BatteryCurrent_Vin = 20*((Uint32)nVinA)/3 - 10000;
-		t_SysMsrmnt.BatteryVoltage_Vin = 5*((int32)2400); // 5*((int32)nVinC)/4095;
+		t_SysMsrmnt.BatteryVoltage_Vin = 12000; // 5*((int32)nVinC)/4095;
 		t_SysMsrmnt.PanelCurrent_Vin = 20*((Uint32)nVinB)/3 - 10000;
-		t_SysMsrmnt.PanelVoltage_Vin = 25*((int32)nVinD)/3;
+		t_SysMsrmnt.PanelVoltage_Vin = 24000; // 25*((int32)nVinD)/3;
 
-		//// Print results
-		// printf("Values read: \tA1=%d, \t\tB5=%d, \t\tC2=%d, \tD14=%d\n\r", nVin_A1, nVin_B5, nVin_C2, nVin_14);
+		// Update power records with PV power
+		arr_nPowerRecord[(powerRecord_Index%100)] = nCurrentPVPower = (t_SysMsrmnt.PanelCurrent_Vin/1000.0) * (t_SysMsrmnt.PanelVoltage_Vin/1000.0);
+		nCurrentBatPower = (t_SysMsrmnt.BatteryCurrent_Vin/1000.0) * (t_SysMsrmnt.BatteryVoltage_Vin/1000.0);
+		powerRecord_Index++;
 
+		// Find average power
+		fAvgPower = 0;
+		for(i = 0; (i < POWER_RECORD_SIZE) && (i < powerRecord_Index); i++) {
+			fAvgPower += arr_nPowerRecord[i];
+		}
+		fAvgPower = fAvgPower/i;
+		rk_Power = (fAvgPower - nCurrentPVPower);
+
+		// Print results
 		printf("I_bat=%" PRId32 " mA, \tV_bat=%lu mV, \tI_pv=%" PRId32 " mA, \tV_pv=%lu mV\n\r", t_SysMsrmnt.BatteryCurrent_Vin,
 			   t_SysMsrmnt.BatteryVoltage_Vin, t_SysMsrmnt.PanelCurrent_Vin, t_SysMsrmnt.PanelVoltage_Vin);
 
-		// Power PI Controller
+
+		//
+		// Run PI controllers and
+		// Update power input (from battery)
 		yk_Power = (((float) t_SysMsrmnt.BatteryCurrent_Vin) / 1000.0f) * (((float) t_SysMsrmnt.BatteryVoltage_Vin) / 1000.0f);
 
-		// trigger Power PI controller in task 3
+		// Trigger Power PI controller in task 3
 		EALLOW;
 	    Cla1ForceTask3andWait();
 
+	    // Update buck-boost input
 	    rk_BuckBoost = uk_Power;
 
 		// Convert to amps, assign to input yk_BuckBoost
@@ -262,6 +286,7 @@ void main() {
 			t_pwmConfig1->EPwmCMP_A = 0;
 		}
 
+		// Print results
 		temp1 = (int32_t)(yk_BuckBoost*100);
 		temp2 = (int32_t)(uk_BuckBoost*100);
 		temp3 = (int32_t)(yk_Power*100);
@@ -269,12 +294,16 @@ void main() {
 		printf("yk_Power = %" PRId32 ".%" PRId32 ", uk_Power = %" PRId32 ".%d\n\r", temp3/100, temp3%100, temp4/100, abs(temp4%100));
 		printf("yk_BuckBoost = %" PRId32 ".%" PRId32 ", uk_BuckBoost = %" PRId32 ".%d, Comp Val = %hu, TBPRD: %hu\n\r", temp1/100, temp1%100, temp2/100, abs(temp2%100), (Uint16) Duty, EPwm1Regs.TBPRD);
 
+		temp1 = (int32_t)(fAvgPower*100);
+		temp2 = (int32_t)(nCurrentPVPower*100);
+		temp3 = (int32_t)(rk_Power*100);
+		printf("AvgPower = %" PRId32 ".%" PRId32 ", CurrentPVPower = %" PRId32 ".%" PRId32 ", rk_Power = %" PRId32 ".%" PRId32 "\n\r", temp1/100, temp1%100, temp2/100, temp2%100, temp3/100, temp3%100);
+
 		// Wait, reset LED
 		DELAY_US(10000);
 		GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
-
-		DELAY_US(90000);
+		DELAY_US(490000);
 	}
 }
 
